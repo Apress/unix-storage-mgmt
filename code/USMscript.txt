@@ -1,0 +1,65 @@
+#!/bin/csh -f
+#
+# Name: mem_swap
+#
+# Description: This script is used to determine the ammount of available RAM
+#              and SWAP.  Ctrl C is used to exit this script and it updates 
+#              every 7 seconds.  This script also produces a high avg not
+#              absolutes.
+
+
+# Time to set some variables
+
+set UID=(`/usr/xpg4/bin/id -u`)
+
+# Let's get to work
+while (1)
+    set TOT_MEM_SWAP=(`swap -s|nawk '{print $11}'|nawk -F k '{print $1}'`)
+    set TOT_MEM1_SWAP=(`swap -s|nawk '{print $9}'|nawk -F k '{print $1}'`)
+set TOT_MEM1=(`/usr/platform/sun4u/sbin/prtdiag|sed -n "3p"|nawk '{print $3,\ $4}'`)
+set TOT_MEM2=(`/usr/platform/sun4u/sbin/prtdiag|sed -n "3p"|nawk '{print $3}'`)
+    set TOT_MEM3 = ${TOT_MEM2}000
+    set TOT_SWAP = 0
+    set TOT_USWAP = 0
+    set fcntr = `swap -l | grep -v blocks | wc -l`
+    while ( ${fcntr} > 0 )
+
+    set INC_SWAP = `swap -l |grep -v blocks |nawk '{print $4}'|sed -n "${fcntr}p"`
+        @ TOT_SWAP = ${TOT_SWAP} + ${INC_SWAP}
+        @ fcntr = ${fcntr} - 1
+
+    end
+
+    set fcntr1 = `swap -l | grep -v blocks | wc -l`
+
+    while ( ${fcntr1} > 0 )
+ 
+  set INC_USWAP = `swap -l |grep -v free |nawk '{print $5}'|sed -n "${fcntr1}p"`
+        @ TOT_USWAP = ${TOT_USWAP} + ${INC_USWAP}
+        @ fcntr1 = ${fcntr1} - 1
+
+    end
+
+    @ TOT_SWAP = ${TOT_SWAP} / 2
+    @ TOT_USWAP = ${TOT_USWAP} / 2
+    @ TOT_UDSWAP = ${TOT_SWAP} - ${TOT_USWAP}
+
+    @ TOT_A_MEM1 = ${TOT_MEM_SWAP} + ${TOT_MEM1_SWAP}
+    @ TOT_A_MEM = ${TOT_A_MEM1} - ${TOT_SWAP}
+    @ TOT_U_MEM = ${TOT_MEM3} - ${TOT_A_MEM}
+
+    clear
+
+    echo "Total System RAM:                     ${TOT_MEM1}"
+    echo "Total System Swap:                    ${TOT_SWAP} Kbytes" 
+    echo "Available System RAM:                 ${TOT_A_MEM} Kbytes"
+    echo "Available System Swap:                ${TOT_USWAP} Kbytes"
+    echo "Used System RAM:                      ${TOT_U_MEM} Kbytes"
+    echo "Used System Swap:                     ${TOT_UDSWAP} Kbytes"
+    echo ""
+    echo ""
+    echo ""
+    echo " Type Cntrl C to exit"
+
+    sleep 7
+end
